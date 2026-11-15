@@ -1,0 +1,181 @@
+package components
+
+templ ModuleDTriage() {
+	<div id="module-d" class="rounded-2xl bg-slate-900/80 border border-slate-800/90 p-4 sm:p-5 shadow-xl space-y-4">
+		<!-- Header & Filter Tabs -->
+		<div class="flex flex-wrap items-center justify-between gap-3">
+			<div class="flex items-center gap-2">
+				<span class="px-2 py-0.5 rounded text-[11px] font-mono font-bold uppercase bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
+					MODULE D
+				</span>
+				<h2 class="font-display text-base sm:text-lg font-bold text-white">
+					Color-Coded Clinical Triage &amp; Plain-English Countermeasure Guide
+				</h2>
+			</div>
+
+			<div class="flex flex-wrap items-center gap-1.5 text-xs font-mono">
+				<button
+					type="button"
+					@click="activeSystem = 'all'; showAlertsOnly = false"
+					class="px-2.5 py-1 rounded-lg border transition cursor-pointer"
+					:class="activeSystem === 'all' && !showAlertsOnly ? 'bg-cyan-500 text-slate-950 font-bold border-cyan-400' : 'bg-slate-950 text-slate-300 border-slate-800'"
+				>
+					All Systems (7)
+				</button>
+				<button
+					type="button"
+					@click="showAlertsOnly = !showAlertsOnly"
+					class="px-2.5 py-1 rounded-lg border transition cursor-pointer"
+					:class="showAlertsOnly ? 'bg-amber-400 text-slate-950 font-bold border-amber-300' : 'bg-slate-950 text-amber-300 border-slate-800'"
+				>
+					Active Drift / Alerts Only
+				</button>
+			</div>
+		</div>
+
+		<!-- Active System Filter Banner when filtered via Body Map -->
+		<div
+			x-show="activeSystem !== 'all'"
+			x-cloak
+			class="p-2.5 rounded-xl bg-cyan-950/40 border border-cyan-500/40 flex items-center justify-between text-xs"
+		>
+			<span class="text-cyan-200 font-mono">
+				🔍 Filtered by Body Map System: <strong class="text-white uppercase" x-text="activeSystemLabel()"></strong>
+			</span>
+			<button
+				type="button"
+				@click="activeSystem = 'all'"
+				class="px-2 py-0.5 rounded bg-slate-900 text-cyan-300 border border-cyan-500/30 font-mono text-[11px] cursor-pointer"
+			>
+				Reset Filter ✕
+			</button>
+		</div>
+
+		<!-- Clinical Alert Cards List -->
+		<div class="space-y-3.5">
+			<template x-for="card in filteredAlertCards()" :key="card.id">
+				<div
+					class="rounded-xl border p-4 transition-all space-y-3.5"
+					:class="{
+						'bg-slate-950/75 border-emerald-500/35': card.tier === 'GREEN',
+						'bg-amber-950/20 border-amber-500/55 shadow-md shadow-amber-500/5': card.tier === 'AMBER',
+						'bg-rose-950/25 border-rose-500/65 shadow-lg shadow-rose-500/10': card.tier === 'RED'
+					}"
+				>
+					<!-- Top Row: Tier Badge, Title, Live Reading vs Nominal -->
+					<div class="flex flex-col sm:flex-row sm:items-start justify-between gap-2.5">
+						<div class="space-y-1">
+							<div class="flex flex-wrap items-center gap-2">
+								<span
+									class="px-2.5 py-0.5 rounded text-[11px] font-mono font-bold uppercase"
+									:class="{
+										'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40': card.tier === 'GREEN',
+										'bg-amber-400 text-slate-950 font-extrabold': card.tier === 'AMBER',
+										'bg-rose-500 text-white font-extrabold animate-pulse': card.tier === 'RED'
+									}"
+									x-text="card.tier_badge_text"
+								></span>
+								<span class="text-[11px] font-mono text-slate-400" x-text="card.body_system_label"></span>
+								<span
+									x-show="card.csa_cans_linked"
+									class="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-purple-500/20 text-purple-300 border border-purple-400/40"
+								>
+									🇨🇦 CSA CANS Neutron Linked
+								</span>
+							</div>
+							<h3 class="font-display text-base font-bold text-white" x-text="card.title"></h3>
+						</div>
+
+						<!-- Live Value Readout Box -->
+						<div class="sm:text-right font-mono shrink-0 bg-slate-900/90 border border-slate-800 rounded-lg px-3 py-1.5">
+							<div
+								class="text-sm font-bold"
+								:class="{
+									'text-emerald-300': card.tier === 'GREEN',
+									'text-amber-300': card.tier === 'AMBER',
+									'text-rose-300': card.tier === 'RED'
+								}"
+								x-text="card.current_value_display"
+							></div>
+							<div class="text-[10px] text-slate-400" x-text="'Ref: ' + card.nominal_range_display"></div>
+						</div>
+					</div>
+
+					<!-- NASA 5-Hazard Tags Driving This Alert -->
+					<div class="flex flex-wrap items-center gap-1.5">
+						<span class="text-[10px] font-mono uppercase text-slate-400 mr-1">NASA 5-HAZARD DRIVERS:</span>
+						<template x-for="hz in card.hazard_tags" :key="hz.id">
+							<span
+								class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-mono bg-slate-900 border border-slate-700 text-cyan-200"
+							>
+								<span x-text="hz.icon"></span>
+								<span x-text="hz.short_name"></span>
+							</span>
+						</template>
+					</div>
+
+					<!-- 2-Column Plain-English Medical Explainer -->
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+						<div class="p-3 rounded-xl bg-slate-900/85 border border-slate-800/90 space-y-1">
+							<div class="font-mono text-[10px] uppercase text-cyan-400 font-bold">
+								① WHY THIS EXAM IS NEEDED (PLAIN-ENGLISH MEDICAL EXPLAINER)
+							</div>
+							<p class="text-slate-200 leading-relaxed" x-text="card.why_exam_needed"></p>
+						</div>
+						<div class="p-3 rounded-xl bg-slate-900/85 border border-slate-800/90 space-y-1">
+							<div class="font-mono text-[10px] uppercase text-amber-300 font-bold">
+								② HOW SPACEFLIGHT HAZARDS CAUSE THIS CHANGE
+							</div>
+							<p class="text-slate-200 leading-relaxed" x-text="card.how_hazards_cause"></p>
+						</div>
+					</div>
+
+					<!-- Step-by-Step Autonomous Countermeasure Action Protocol -->
+					<div class="p-3.5 rounded-xl bg-slate-950/90 border border-slate-800 space-y-2.5">
+						<div class="flex flex-wrap items-center justify-between gap-2">
+							<div class="font-mono text-[11px] uppercase font-bold text-emerald-400 flex items-center gap-1.5">
+								<span>③ EXACT STEP-BY-STEP AUTONOMOUS ACTION PROTOCOL:</span>
+								<span class="text-white" x-text="card.protocol_title"></span>
+							</div>
+							<span class="text-[10px] font-mono text-slate-400">Check steps as executed to boost Crew Readiness</span>
+						</div>
+
+						<div class="space-y-2">
+							<template x-for="step in card.protocol_steps" :key="step.id">
+								<label
+									class="flex items-start gap-3 p-2.5 rounded-lg border transition cursor-pointer select-none"
+									:class="step.completed
+										? 'bg-emerald-950/30 border-emerald-500/40 text-emerald-200'
+										: 'bg-slate-900/75 border-slate-800 hover:border-slate-700 text-slate-200'"
+								>
+									<input
+										type="checkbox"
+										:checked="step.completed"
+										@change="toggleStep(step.id)"
+										class="mt-1 h-4 w-4 rounded border-slate-600 text-emerald-500 focus:ring-emerald-500 cursor-pointer"
+									/>
+									<div class="flex-1 min-w-0 text-xs">
+										<div class="flex flex-wrap items-center justify-between gap-2">
+											<span class="font-bold text-white" :class="step.completed ? 'line-through opacity-75' : ''" x-text="'Step ' + step.order + ': ' + step.title"></span>
+											<div class="flex items-center gap-1.5 font-mono text-[10px]">
+												<span class="px-1.5 py-0.5 rounded bg-slate-800 text-cyan-300" x-text="step.equipment"></span>
+												<span class="px-1.5 py-0.5 rounded bg-slate-800 text-amber-300" x-text="step.timeframe"></span>
+											</div>
+										</div>
+										<p class="text-slate-300 mt-0.5 leading-relaxed" x-text="step.instruction"></p>
+									</div>
+								</label>
+							</template>
+						</div>
+
+						<!-- Earth Clinic Spin-Off Footnote -->
+						<div class="pt-2 border-t border-slate-800/80 flex items-center gap-2 text-[11px] text-slate-400">
+							<span class="text-emerald-400 font-mono font-semibold shrink-0">🌍 Earth Rural Clinic Spin-Off:</span>
+							<span x-text="card.earth_clinic_analogy"></span>
+						</div>
+					</div>
+				</div>
+			</template>
+		</div>
+	</div>
+}

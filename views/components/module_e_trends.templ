@@ -1,0 +1,130 @@
+package components
+
+templ ModuleETrends() {
+	<div id="module-e" class="rounded-2xl bg-slate-900/80 border border-slate-800/90 p-4 sm:p-5 shadow-xl space-y-4">
+		<!-- Header & Telemetry Mode Tabs -->
+		<div class="flex flex-wrap items-center justify-between gap-3">
+			<div class="flex items-center gap-2">
+				<span class="px-2 py-0.5 rounded text-[11px] font-mono font-bold uppercase bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
+					MODULE E
+				</span>
+				<h2 class="font-display text-base sm:text-lg font-bold text-white">
+					30-Day Mission Telemetry Trends &amp; Crew Readiness Streak
+				</h2>
+			</div>
+
+			<!-- 4 Chart View Switcher Buttons -->
+			<div class="flex flex-wrap items-center gap-1.5 text-xs font-mono">
+				<button
+					type="button"
+					@click="setChartMode('cardio')"
+					class="px-2.5 py-1 rounded-lg border transition cursor-pointer"
+					:class="chartMode === 'cardio' ? 'bg-cyan-500 text-slate-950 font-bold border-cyan-400' : 'bg-slate-950 text-slate-300 border-slate-800 hover:border-slate-700'"
+				>
+					❤️ BP, HR &amp; Glucose
+				</button>
+				<button
+					type="button"
+					@click="setChartMode('radiation')"
+					class="px-2.5 py-1 rounded-lg border transition cursor-pointer"
+					:class="chartMode === 'radiation' ? 'bg-purple-500 text-slate-950 font-bold border-purple-400' : 'bg-slate-950 text-purple-300 border-slate-800 hover:border-slate-700'"
+				>
+					☢️ CSA CANS Neutron Dose
+				</button>
+				<button
+					type="button"
+					@click="setChartMode('neuro')"
+					class="px-2.5 py-1 rounded-lg border transition cursor-pointer"
+					:class="chartMode === 'neuro' ? 'bg-cyan-500 text-slate-950 font-bold border-cyan-400' : 'bg-slate-950 text-slate-300 border-slate-800 hover:border-slate-700'"
+				>
+					🧠 SANS, Sleep &amp; Mood
+				</button>
+				<button
+					type="button"
+					@click="setChartMode('bone')"
+					class="px-2.5 py-1 rounded-lg border transition cursor-pointer"
+					:class="chartMode === 'bone' ? 'bg-cyan-500 text-slate-950 font-bold border-cyan-400' : 'bg-slate-950 text-slate-300 border-slate-800 hover:border-slate-700'"
+				>
+					🦴 Bone Loss &amp; ARED
+				</button>
+			</div>
+		</div>
+
+		<!-- Chart + Gamified Readiness Score Grid -->
+		<div class="grid grid-cols-1 xl:grid-cols-12 gap-4 items-stretch">
+			<!-- Left 8 Cols: 30-Day Interactive Telemetry Chart Canvas -->
+			<div class="xl:col-span-8 rounded-xl bg-slate-950/90 border border-slate-800 p-3.5 flex flex-col justify-between">
+				<div class="flex flex-wrap items-center justify-between gap-2 mb-2 text-xs font-mono">
+					<span class="text-slate-300 font-semibold" x-text="chartTitle()"></span>
+					<span class="text-cyan-400">MISSION DAYS: SOL 1 → SOL 30 (LIVE)</span>
+				</div>
+				<div class="relative w-full h-[250px] sm:h-[275px]">
+					<canvas id="telemetry30DayChart"></canvas>
+				</div>
+				<div class="mt-2 pt-2 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono text-slate-400">
+					<span x-text="'Sol 30 Cum. Dose: ' + state.cans_neutron.cumulative_30d_msv + ' mSv (CSA CANS Neutrons: ' + state.cans_neutron.cumulative_neutron_msv + ' mSv)'"></span>
+					<span class="text-emerald-400">NASA 30-Day BFO Limit: 250.0 mSv</span>
+				</div>
+			</div>
+
+			<!-- Right 4 Cols: Gamified Crew Health Readiness Score & Streak Tracker -->
+			<div class="xl:col-span-4 rounded-xl bg-slate-950/90 border border-slate-800 p-4 flex flex-col justify-between space-y-3">
+				<div class="flex items-center justify-between">
+					<div>
+						<span class="text-[10px] font-mono uppercase text-cyan-400 font-bold block">GAMIFIED CREW HEALTH</span>
+						<h3 class="font-display text-sm font-bold text-white">Readiness Score &amp; Daily Streak</h3>
+					</div>
+					<div class="px-2.5 py-1 rounded-lg bg-amber-500/15 border border-amber-500/40 text-amber-300 font-mono text-xs font-bold">
+						🔥 <span x-text="state.streak_days"></span>-SOL STREAK
+					</div>
+				</div>
+
+				<!-- Readiness Score Progress Bar & Big Number -->
+				<div class="p-3 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2">
+					<div class="flex items-baseline justify-between">
+						<span class="text-xs text-slate-400 font-mono">COMPOSITE READINESS</span>
+						<span
+							class="text-2xl font-mono font-extrabold"
+							:class="{
+								'text-emerald-400': state.readiness_score >= 85,
+								'text-amber-300': state.readiness_score >= 65 && state.readiness_score < 85,
+								'text-rose-400': state.readiness_score < 65
+							}"
+							x-text="state.readiness_score + '%'"
+						></span>
+					</div>
+					<div class="w-full h-2.5 rounded-full bg-slate-800 overflow-hidden">
+						<div
+							class="h-full rounded-full transition-all duration-500"
+							:class="{
+								'bg-gradient-to-r from-emerald-500 to-cyan-400': state.readiness_score >= 85,
+								'bg-gradient-to-r from-amber-500 to-yellow-400': state.readiness_score >= 65 && state.readiness_score < 85,
+								'bg-gradient-to-r from-rose-600 to-orange-500': state.readiness_score < 65
+							}"
+							:style="'width: ' + state.readiness_score + '%'"
+						></div>
+					</div>
+				</div>
+
+				<!-- Daily Streak Targets Checklist -->
+				<div class="space-y-1.5">
+					<template x-for="tgt in state.streak_targets" :key="tgt.id">
+						<div
+							class="p-2 rounded-lg border flex items-start justify-between gap-2 text-xs"
+							:class="tgt.completed ? 'bg-emerald-950/25 border-emerald-500/35 text-emerald-200' : 'bg-slate-900/70 border-slate-800 text-slate-400'"
+						>
+							<div class="flex items-start gap-2">
+								<span x-text="tgt.completed ? '✅' : '⏳'" class="text-xs mt-0.5"></span>
+								<div>
+									<div class="font-semibold text-[11px] text-white" x-text="tgt.label"></div>
+									<div class="text-[10px] text-slate-400 font-mono" x-text="tgt.detail"></div>
+								</div>
+							</div>
+							<span class="font-mono text-[10px] font-bold text-cyan-300 shrink-0" x-text="'+' + tgt.points + ' pts'"></span>
+						</div>
+					</template>
+				</div>
+			</div>
+		</div>
+	</div>
+}

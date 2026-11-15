@@ -1,0 +1,226 @@
+package layout
+
+import "orbitodx/internal/domain"
+
+templ Base(title string, boot domain.InitialBootPayload) {
+	<!DOCTYPE html>
+	<html lang="en" class="dark">
+		<head>
+			<meta charset="UTF-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+			<title>{ title }</title>
+			<link rel="preconnect" href="https://fonts.googleapis.com"/>
+			<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+			<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet"/>
+			<link rel="stylesheet" href="/static/css/app.css"/>
+			<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+			@templ.JSONScript("orbitodx-boot-data", boot)
+			<script src="/static/js/cockpit.js"></script>
+			<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
+		</head>
+		<body
+			x-data="orbitodxApp()"
+			x-init="init()"
+			class="min-h-screen bg-slate-950 text-slate-100 antialiased selection:bg-cyan-500/30 selection:text-cyan-200 pb-24"
+		>
+			<!-- Subtle Spacecraft HUD Grid Background -->
+			<div class="fixed inset-0 pointer-events-none hud-grid-bg opacity-35 z-0"></div>
+
+			<!-- TOP MISSION-CONTROL HUD HEADER -->
+			<header class="sticky top-0 z-40 border-b border-slate-800/90 bg-slate-950/90 backdrop-blur-md">
+				<div class="max-w-[1600px] mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
+					<!-- Brand & NASA/CSA Grounding -->
+					<div class="flex items-center gap-3">
+						<div class="relative flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500/20 via-blue-600/20 to-indigo-600/30 border border-cyan-400/40 shadow-lg shadow-cyan-500/10">
+							<svg class="w-6 h-6 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+								<circle cx="12" cy="12" r="3.5"></circle>
+								<ellipse cx="12" cy="12" rx="10" ry="4.5" transform="rotate(-28 12 12)"></ellipse>
+								<path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke-linecap="round"></path>
+							</svg>
+							<span
+								class="absolute -top-1 -right-1 h-3 w-3 rounded-full border-2 border-slate-950"
+								:class="{
+									'bg-emerald-400': state.overall_tier === 'GREEN',
+									'bg-amber-400 animate-pulse': state.overall_tier === 'AMBER',
+									'bg-rose-500 animate-ping': state.overall_tier === 'RED'
+								}"
+							></span>
+						</div>
+						<div>
+							<div class="flex items-center gap-2">
+								<span class="font-display text-xl font-bold tracking-tight text-white">ORBITO<span class="text-cyan-400">DX</span></span>
+								<span class="hidden sm:inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-semibold uppercase tracking-wider bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
+									NASA HRP 5-HAZARD + CSA CANS v3.4
+								</span>
+							</div>
+							<p class="text-xs text-slate-400">Autonomous Crew Health Triage &amp; Countermeasure Clinical Decision-Support</p>
+						</div>
+					</div>
+
+					<!-- Center Telemetry Strip: Active Mission, Comm Delay & Triage Tier -->
+					<div class="flex flex-wrap items-center gap-2 sm:gap-3">
+						<!-- Comm Delay Live Indicator -->
+						<div
+							class="flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-mono transition-all"
+							:class="state.mission.comm_delay_one_way_sec > 60 ? 'bg-rose-950/60 border-rose-500/50 text-rose-200' : 'bg-slate-900/90 border-slate-700/80 text-slate-300'"
+						>
+							<span class="inline-block w-2 h-2 rounded-full" :class="state.mission.comm_delay_one_way_sec > 60 ? 'bg-rose-400 animate-ping' : 'bg-cyan-400'"></span>
+							<div>
+								<span class="text-[10px] uppercase tracking-wider text-slate-400 block">EARTH COMM LATENCY</span>
+								<span class="font-semibold" x-text="state.mission.comm_delay_one_way_label + ' (' + state.mission.comm_delay_round_trip_label + ')'"></span>
+							</div>
+						</div>
+
+						<!-- Overall Triage Badge -->
+						<div
+							class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg border text-xs font-mono font-bold tracking-wide uppercase transition-all"
+							:class="{
+								'bg-emerald-950/70 border-emerald-500/50 text-emerald-300': state.overall_tier === 'GREEN',
+								'bg-amber-950/70 border-amber-500/60 text-amber-300': state.overall_tier === 'AMBER',
+								'bg-rose-950/80 border-rose-500/70 text-rose-200 shadow-lg shadow-rose-500/20': state.overall_tier === 'RED'
+							}"
+						>
+							<span
+								class="h-2.5 w-2.5 rounded-full"
+								:class="{
+									'bg-emerald-400': state.overall_tier === 'GREEN',
+									'bg-amber-400': state.overall_tier === 'AMBER',
+									'bg-rose-500 animate-pulse': state.overall_tier === 'RED'
+								}"
+							></span>
+							<span x-text="'TRIAGE: ' + state.overall_tier"></span>
+							<span class="text-[11px] font-normal opacity-80" x-text="'(' + state.red_count + ' Red / ' + state.amber_count + ' Amber / ' + state.green_count + ' Green)'"></span>
+						</div>
+
+						<!-- Readiness & Streak Pill -->
+						<div class="hidden xl:flex items-center gap-2.5 px-3 py-1.5 rounded-lg bg-slate-900/90 border border-slate-800 text-xs font-mono">
+							<span class="text-cyan-400 font-bold" x-text="state.readiness_score + '% READINESS'"></span>
+							<span class="text-slate-600">|</span>
+							<span class="text-amber-300 font-semibold" x-text="'🔥 ' + state.streak_days + '-SOL STREAK'"></span>
+						</div>
+					</div>
+
+					<!-- Right Actions: Earth Spin-Off & 5-Beat Pitch Mode -->
+					<div class="flex items-center gap-2">
+						<button
+							type="button"
+							@click="earthModalOpen = true"
+							class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 transition cursor-pointer"
+						>
+							<span>🌍</span>
+							<span>Earth Spin-Off Impact</span>
+						</button>
+						<button
+							type="button"
+							@click="pitchBarOpen = !pitchBarOpen"
+							class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer border"
+							:class="pitchBarOpen ? 'bg-cyan-500/20 text-cyan-200 border-cyan-400/50' : 'bg-slate-900 text-slate-300 border-slate-700 hover:border-slate-600'"
+						>
+							<span>🎯</span>
+							<span x-text="pitchBarOpen ? 'Hide Pitch Beats' : '5-Beat Pitch Guide'"></span>
+						</button>
+					</div>
+				</div>
+			</header>
+
+			<!-- MAIN COCKPIT CONTENT -->
+			<main class="relative z-10 max-w-[1600px] mx-auto px-4 sm:px-6 py-5 space-y-5">
+				{ children... }
+			</main>
+
+			<!-- EARTH SPIN-OFF & RURAL CLINIC IMPACT MODAL (PITCH BEAT 5) -->
+			<div
+				x-show="earthModalOpen"
+				x-cloak
+				class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm"
+				@keydown.escape.window="earthModalOpen = false"
+			>
+				<div
+					@click.outside="earthModalOpen = false"
+					class="relative w-full max-w-4xl rounded-2xl bg-slate-900 border border-emerald-500/40 shadow-2xl p-6 space-y-5 max-h-[90vh] overflow-y-auto"
+				>
+					<div class="flex items-start justify-between gap-4 border-b border-slate-800 pb-4">
+						<div>
+							<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-mono uppercase bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+								Beat 5 • Dual-Use Space-to-Earth Clinical Translation
+							</span>
+							<h2 class="mt-2 text-xl font-bold text-white font-display">
+								From Deep Space to Remote Earth Clinics: Zero-Cloud Autonomous Triage
+							</h2>
+							<p class="text-sm text-slate-400 mt-1">
+								The exact same deterministic Go binary (<code class="text-cyan-300 font-mono">~15 MB RAM</code>, zero internet requirement) that protects astronauts during a 28-minute Mars comm blackout empowers Northern Canadian nursing stations, rural clinics, and disaster zones without immediate specialist access.
+							</p>
+						</div>
+						<button
+							type="button"
+							@click="earthModalOpen = false"
+							class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-mono cursor-pointer"
+						>
+							ESC / CLOSE ✕
+						</button>
+					</div>
+
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+						<div class="p-4 rounded-xl bg-slate-950/80 border border-cyan-500/30 space-y-2">
+							<div class="text-xs font-mono uppercase text-cyan-400 font-semibold">🚀 Deep-Space Habitat (Mars Transit / Lunar Base)</div>
+							<ul class="text-xs text-slate-300 space-y-2 leading-relaxed">
+								<li>• <strong>20-Min One-Way Delay:</strong> Crew Medical Officer (non-MD) cannot wait for Houston Flight Surgeons during an acute physiological shift.</li>
+								<li>• <strong>SANS Ocular Ultrasound:</strong> Detects optic disc edema from 0g cephalad fluid shift + elevated cabin CO₂.</li>
+								<li>• <strong>CSA CANS Neutron Dosimetry:</strong> Tracks uncharged secondary fast neutrons inside spacecraft hull and prescribes Storm Shelter + antioxidants.</li>
+								<li>• <strong>Microgravity Bone &amp; Glucose Drift:</strong> Prevents renal stone crisis and spaceflight insulin resistance via ARED + hydration protocols.</li>
+							</ul>
+						</div>
+						<div class="p-4 rounded-xl bg-slate-950/80 border border-emerald-500/30 space-y-2">
+							<div class="text-xs font-mono uppercase text-emerald-400 font-semibold">🏥 Remote Earth Clinic (Northern Canada / Rural Triage)</div>
+							<ul class="text-xs text-slate-300 space-y-2 leading-relaxed">
+								<li>• <strong>Bandwidth-Starved / Air-Gapped Clinics:</strong> Community nurses receive instant Green/Amber/Red triage and plain-language protocols offline.</li>
+								<li>• <strong>Point-of-Care Cranial/Ocular Screening:</strong> Guides rural emergency staff in spotting intracranial hypertension or preeclampsia before medevac.</li>
+								<li>• <strong>Occupational &amp; Radiation Safety:</strong> Monitors remote mining air quality (silica dust/CO₂) and radiological exposure in nuclear/industrial sites.</li>
+								<li>• <strong>Immobilized &amp; Metabolic Care:</strong> Guides preventative physical loading and glycemic stabilization for remote home-care patients.</li>
+							</ul>
+						</div>
+					</div>
+
+					<div class="p-4 rounded-xl bg-emerald-950/30 border border-emerald-500/30 flex flex-wrap items-center justify-between gap-4">
+						<div class="text-xs text-emerald-200">
+							<strong>Store-and-Forward Telemetry Packet (<span class="font-mono" x-text="state.store_and_forward_packet_id"></span>):</strong> Queues a compressed 4 KB clinical JSON summary that transmits automatically the moment satellite or ground link resumes.
+						</div>
+						<button
+							type="button"
+							@click="earthModalOpen = false"
+							class="px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold text-xs transition cursor-pointer"
+						>
+							Return to Live Cockpit
+						</button>
+					</div>
+				</div>
+			</div>
+
+			<!-- BOTTOM 5-BEAT PITCH STORYLINE PRESENTER BAR -->
+			<div
+				x-show="pitchBarOpen"
+				class="fixed bottom-0 inset-x-0 z-40 border-t border-cyan-500/30 bg-slate-950/95 backdrop-blur-md shadow-2xl"
+			>
+				<div class="max-w-[1600px] mx-auto px-4 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-3">
+					<div class="flex items-center gap-2">
+						<span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
+							LIVE PITCH GUIDE
+						</span>
+						<span class="text-xs text-slate-300 font-medium" x-text="pitchBeats[activePitchBeat].talkingPoint"></span>
+					</div>
+					<div class="flex flex-wrap items-center gap-1.5">
+						<template x-for="(beat, idx) in pitchBeats" :key="idx">
+							<button
+								type="button"
+								@click="runPitchBeat(idx)"
+								class="px-2.5 py-1 rounded-md text-xs font-mono transition cursor-pointer border"
+								:class="activePitchBeat === idx ? 'bg-cyan-500 text-slate-950 font-bold border-cyan-400' : 'bg-slate-900 text-slate-300 border-slate-800 hover:border-cyan-500/50'"
+								x-text="beat.label"
+							></button>
+						</template>
+					</div>
+				</div>
+			</div>
+		</body>
+	</html>
+}

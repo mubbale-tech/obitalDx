@@ -1,0 +1,29 @@
+package views
+
+import (
+	"orbitodx/internal/domain"
+	"orbitodx/views/components"
+	"orbitodx/views/layout"
+)
+
+templ Dashboard(boot domain.InitialBootPayload) {
+	@layout.Base("OrbitoDX — Autonomous Deep-Space Crew Health Triage & Countermeasure Cockpit", boot) {
+		<!-- MODULE A: Mission Environment & NASA 5-Hazard Context Switcher -->
+		@components.ModuleAMission()
+
+		<!-- MAIN 12-COLUMN MISSION-CONTROL CLINICAL COCKPIT GRID -->
+		<div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+			<!-- LEFT COLUMN (5 COLS): MODULE B (Interactive Body Map + CSA CANS) & MODULE C (Vitals + Scenarios) -->
+			<div class="lg:col-span-5 space-y-5">
+				@components.ModuleBBodyMap()
+				@components.ModuleCVitals()
+			</div>
+
+			<!-- RIGHT COLUMN (7 COLS): MODULE E (30-Day Telemetry & Readiness Streak) & MODULE D (Color-Coded Triage & Protocols) -->
+			<div class="lg:col-span-7 space-y-5">
+				@components.ModuleETrends()
+				@components.ModuleDTriage()
+			</div>
+		</div>
+	}
+}

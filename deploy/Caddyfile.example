@@ -1,0 +1,5 @@
+# Optional Caddy reverse proxy configuration for automatic HTTPS on your VPS
+orbitodx.yourdomain.com {
+    encode zstd gzip
+    reverse_proxy 127.0.0.1:8080
+}

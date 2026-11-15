@@ -1,0 +1,37 @@
+# Compiled binaries
+/bin/
+/orbitodx
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+coverage.txt
+
+# Go workspace file
+go.work
+go.work.sum
+
+# Node / frontend tooling (if used locally)
+node_modules/
+npm-debug.log*
+
+# Environment and secrets
+.env
+.env.*
+
+# Editor and OS files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+tmp/
